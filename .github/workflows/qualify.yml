@@ -1,0 +1,24 @@
+name: Native Common V2 BFS qualification
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build and qualify exact portable provider
+        run: |
+          make check
+          truncate -s 2M build/foreign.img
+          mkfs.bfs -N 64 build/foreign.img
+          build/test_bfs ./build/BFS.so build/foreign.img
+      - name: Native CPU qualification
+        run: |
+          make clean
+          make PROFILE=aggressive check

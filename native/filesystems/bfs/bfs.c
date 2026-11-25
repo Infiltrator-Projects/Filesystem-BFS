@@ -792,7 +792,8 @@ static int query_impl(void *v,IfsFsVolumeInfoV2 *o)
 }
 static int label_impl(void *v,char *label,uint32_t cap,uint32_t *n)
 {
-    if(!n)return IFS_FS_INVALID;*n=0;
+    if(!n)return IFS_FS_INVALID;
+    *n=0;
     int rc=usable(v);if(rc!=IFS_FS_OK)return rc;
     uint8_t raw[B];rc=rd(&s.h,0,raw,B);if(rc!=IFS_FS_OK)return rc;
     uint32_t len=namelen(raw+34,6u);
@@ -801,7 +802,8 @@ static int label_impl(void *v,char *label,uint32_t cap,uint32_t *n)
 }
 static int check_impl(void *v,uint32_t flags,uint64_t *errors)
 {
-    if(!errors)return IFS_FS_INVALID;*errors=0;
+    if(!errors)return IFS_FS_INVALID;
+    *errors=0;
     int rc=usable(v);if(rc!=IFS_FS_OK)return rc;
     if(flags)return IFS_FS_INVALID;
     uint8_t *map=NULL;rc=load_map(&map);
