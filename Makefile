@@ -16,7 +16,7 @@ endif
 all: $(OUT)
 $(OUT): $(SRC) $(EXTRA)
 	mkdir -p build
-	ifeq ($(PROFILE),aggressive)
+ifeq ($(PROFILE),aggressive)
 	mkdir -p $(PGO)
 	$(CC) $(BASE) $(OPT) -shared -fprofile-generate=$(PGO) -o $@ $(SRC)
 	build/test_bfs ./$(OUT)
