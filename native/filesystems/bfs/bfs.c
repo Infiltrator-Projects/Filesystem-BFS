@@ -535,7 +535,12 @@ static int create_impl(void *v,const char *path,uint32_t type)
     put16(j.new_inode,j.inode);put32(j.new_inode+16,1u);
     put32(j.new_inode+20,0100644u);put32(j.new_inode+32,1u);
     new_extent(j.new_inode,0,0);
-    put16(j.new_dir,j.inode);copy(j.new_dir+2,name,len);
+    /* Explicitly bound the on-disk 14-byte name field at the write site.
+     * The native LTO build must prove the bound independently of lookup. */
+    if(!len || len>sizeof(j.new_dir)-2u)return IFS_FS_INVALID;
+    put16(j.new_dir,j.inode);
+    for(uint32_t i=0u;i<MAXNAME;++i)
+        j.new_dir[2u+i]=i<len?name[i]:0u;
     return commit(&j);
 }
 static int remove_impl(void *v,const char *path)
@@ -564,7 +569,12 @@ static int rename_impl(void *v,const char *oldpath,const char *newpath)
     if(rc!=IFS_FS_OK)return rc;
     j.inode=f.ino;copy(j.new_inode,j.old_inode,I);
     rc=rd(&s.h,dir_at(&s.root,j.slot),j.old_dir,D);if(rc!=IFS_FS_OK)return rc;
-    put16(j.new_dir,j.inode);copy(j.new_dir+2,name,len);
+    /* Explicitly bound the on-disk 14-byte name field at the write site.
+     * The native LTO build must prove the bound independently of lookup. */
+    if(!len || len>sizeof(j.new_dir)-2u)return IFS_FS_INVALID;
+    put16(j.new_dir,j.inode);
+    for(uint32_t i=0u;i<MAXNAME;++i)
+        j.new_dir[2u+i]=i<len?name[i]:0u;
     return commit(&j);
 }
 static int load_map(uint8_t **map)
