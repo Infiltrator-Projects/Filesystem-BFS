@@ -29,6 +29,7 @@ static IfsFsHostRuntimeV2 h={.abi_version=2,.structure_bytes=sizeof h,
 static const IfsFsCoreOpsV2 *core;
 static const IfsFsVolumeOpsV2 *vol;
 static const IfsFsDefragOpsV2 *df;
+static const IfsFsAllocationOpsV2 *allocation;
 static void *mount(void){
     void *v=NULL;IfsFsVolumeInfoV2 info={.structure_bytes=sizeof info};
     assert(core->mount(&h,&v,&info)==0);assert(v&&info.block_bytes==B);return v;
@@ -58,6 +59,32 @@ static void validate(void *v,uint64_t pos[N],unsigned policy){
         assert(le16(raw)==ino&&le32(raw+4)*B==pos[i]);
         assert(le32(raw+12)+1-pos[i]==PAY);
     }
+    /* Independently compare the whole allocation map with all file inodes,
+     * including free growth runs and the reserved inode-table prefix. */
+    IfsFsVolumeInfoV2 info={.structure_bytes=sizeof info};
+    assert(vol->query(v,&info)==IFS_FS_OK);
+    uint64_t at=0u,unknown=0u,free_bytes=0u,gap[N]={0};
+    for(;;) {
+        IfsFsAllocationRangeV2 ranges[3]={{0}};
+        uint64_t next=at;uint32_t count=99u;
+        int rc=allocation->map(v,at,ranges,3u,&count);
+        assert(ifs_fs_allocation_page_v2_valid(SIZE,at,rc,ranges,3u,count,&next,&unknown));
+        if(rc==IFS_FS_END)break;
+        for(uint32_t j=0u;j<count;++j) {
+            const IfsFsAllocationRangeV2 *r=&ranges[j];
+            if(r->state==IFS_FS_SPACE_FREE) {
+                free_bytes+=r->length;
+                for(unsigned i=0u;i<N;++i) {
+                    uint64_t end=pos[i]+PAY;
+                    if(r->physical_offset==end || (gap[i] && r->physical_offset==end+gap[i]))
+                        gap[i]+=r->length;
+                }
+            }
+        }
+        assert(next>at);at=next;
+    }
+    assert(at==SIZE && !unknown && free_bytes==info.free_bytes);
+    if(policy)for(unsigned i=0u;i<N;++i)assert(gap[i]>=2u*B);
     uint64_t root_end=(uint64_t)(le32(disk+B+8)+1)*B;
     for(unsigned i=0;i<N;i++){
         uint64_t end=pos[i]+PAY,slack=policy?2u*B:0;
@@ -119,6 +146,8 @@ int main(int argc,char **argv){
     core=(const void*)a->query_group(IFS_FS_GROUP_CORE,2,2);
     vol=(const void*)a->query_group(IFS_FS_GROUP_VOLUME,2,2);
     df=(const void*)a->query_group(IFS_FS_GROUP_DEFRAG,2,2);
+    allocation=(const void*)a->query_group(IFS_FS_GROUP_ALLOCATION,2,2);
+    assert(allocation&&allocation->map&&allocation->header.capabilities==IFS_FS_ALLOCATION_MAP);
     assert(core&&vol&&df&&df->header.capabilities==IFS_FS_DEFRAG_ALL);
     run(0);run(10);fault();
     /* An independently detected cross-linked inode must fail closed. */

@@ -658,6 +658,57 @@ static int map_impl(void *v,const char *path,uint64_t first,IfsFsExtentV2 *out,
     *out=(IfsFsExtentV2){.physical_offset=(uint64_t)f.first*B,.length=f.size};
     *written=1u;return IFS_FS_OK;
 }
+/* BFS has no separate free-space bitmap: its native allocator validates
+ * the complete inode table and namespace, and builds the exact ownership
+ * map from the format's contiguous inode extents. Reuse that same checked
+ * inventory rather than assuming holes between visible regular files. */
+static int allocation_impl(void *v,uint64_t first,IfsFsAllocationRangeV2 *out,
+                           uint32_t capacity,uint32_t *written)
+{
+    if(!written)return IFS_FS_INVALID;
+    *written=0u;
+    int rc=usable(v);if(rc!=IFS_FS_OK)return rc;
+    if(!out || !capacity || capacity>64u || first>s.h.volume_bytes)
+        return IFS_FS_INVALID;
+    Node *nodes=s.h.allocate(s.h.context,(MAXINO+1u)*sizeof *nodes);
+    if(!nodes)return IFS_FS_NO_MEMORY;
+    uint8_t *bitmap=NULL;uint64_t free_blocks=0u;
+    rc=scan(&s.h,&s.g,nodes,&bitmap,&free_blocks);
+    if(rc!=IFS_FS_OK)goto done;
+    if(free_blocks!=s.free_blocks){rc=IFS_FS_CORRUPT;goto done;}
+    if(first==s.h.volume_bytes){rc=IFS_FS_END;goto done;}
+    IfsFsAllocationRangeV2 page[64]={{0}};
+    uint64_t at=first;uint32_t count=0u,scanned=0u;
+    while(at<s.h.volume_bytes && scanned<65536u) {
+        if(cancelled(&s.h)){rc=IFS_FS_BUSY;goto done;}
+        uint64_t block=at/B,end;uint32_t state;
+        if(block<s.g.data){state=IFS_FS_SPACE_RESERVED;end=(uint64_t)s.g.data*B;}
+        else if(block>=s.g.total){state=IFS_FS_SPACE_RESERVED;end=s.h.volume_bytes;}
+        else {
+            state=bit(bitmap,(uint32_t)block)?IFS_FS_SPACE_ALLOCATED:IFS_FS_SPACE_FREE;
+            end=(block+1u)*B;
+        }
+        if(count && page[count-1u].state==state)page[count-1u].length+=end-at;
+        else {
+            if(count==capacity)break;
+            page[count++]=(IfsFsAllocationRangeV2){
+                .physical_offset=at,.length=end-at,.state=state};
+        }
+        at=end;++scanned;
+    }
+    copy(out,page,count*sizeof *page);*written=count;rc=IFS_FS_OK;
+done:
+    if(bitmap)s.h.release(s.h.context,bitmap);
+    s.h.release(s.h.context,nodes);
+    return rc;
+}
+static int allocation(void *v,uint64_t first,IfsFsAllocationRangeV2 *out,
+                      uint32_t capacity,uint32_t *written)
+{
+    if(written)*written=0u;
+    if(!enter())return IFS_FS_BUSY;
+    return leave(allocation_impl(v,first,out,capacity,written));
+}
 static int plan_impl(void *v,const char *path,uint32_t policy,void **out)
 {
     if(!out)return IFS_FS_INVALID;
@@ -909,6 +960,9 @@ static const IfsFsVolumeOpsV2 volume={
         IFS_FS_VOLUME_QUERY|IFS_FS_VOLUME_LABEL_GET|IFS_FS_VOLUME_SYNC|
         IFS_FS_VOLUME_FORMAT|IFS_FS_VOLUME_CHECK},
     .query=query,.label=label,.sync=sync_volume,.format=format,.check=check};
+static const IfsFsAllocationOpsV2 allocation_ops={
+    .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsAllocationOpsV2),IFS_FS_GROUP_ALLOCATION,0,IFS_FS_ALLOCATION_MAP},
+    .map=allocation};
 static const IfsFsDefragOpsV2 defrag={
     .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsDefragOpsV2),IFS_FS_GROUP_DEFRAG,0,IFS_FS_DEFRAG_ALL},
     .map=map,.plan=plan,.execute=execute,.verify=verify,.recover=recover,.release_plan=release_plan};
@@ -918,6 +972,7 @@ static const IfsFsGroupHeaderV2 *group(uint32_t id,uint32_t min,uint32_t max)
     if(id==IFS_FS_GROUP_CORE)return &core.header;
     if(id==IFS_FS_GROUP_VOLUME)return &volume.header;
     if(id==IFS_FS_GROUP_DEFRAG)return &defrag.header;
+    if(id==IFS_FS_GROUP_ALLOCATION)return &allocation_ops.header;
     return NULL;
 }
 __attribute__((used,section(".ifsmeta")))static const char identity[]="IFS-MODULE:bfs:common2";
@@ -925,6 +980,6 @@ static const IfsFsModuleApiV2 api={
     .abi_version=IFS_FS_COMMON_ABI_V2,.structure_bytes=sizeof(IfsFsModuleApiV2),
     .format_id="bfs",.runtime_profiles=IFS_FS_PROFILE_HOSTED|IFS_FS_PROFILE_FREESTANDING,
     .group_mask=IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)|
-                IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG),.query_group=group};
+                IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG)|IFS_FS_GROUP_BIT(IFS_FS_GROUP_ALLOCATION),.query_group=group};
 __attribute__((visibility("default")))
 const IfsFsModuleApiV2 *infiltrator_filesystem_api_v2(void){return &api;}
