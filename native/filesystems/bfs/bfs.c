@@ -11,6 +11,16 @@
 #include <stddef.h>
 #include <stdatomic.h>
 
+/* GCC may lower aggregate initialization to these routines even in
+ * a freestanding LTO build. Keep the implementations private and
+ * independent of libc, including when native optimizations are enabled. */
+__attribute__((visibility("hidden"),used,externally_visible))
+void *memset(void *dst,int value,size_t n)
+{ volatile unsigned char *p=dst;while(n--)*p++=(unsigned char)value;return dst; }
+__attribute__((visibility("hidden"),used,externally_visible))
+void *memcpy(void *dst,const void *src,size_t n)
+{ volatile unsigned char *p=dst;const volatile unsigned char *q=src;while(n--)*p++=*q++;return dst; }
+
 enum { B=512, I=64, D=16, ROOT=2, MAXINO=513, MAXNAME=14,
        NATIVE_INODES=512, ROOT_BLOCKS=16, DIR_LIMIT=4096,
        JOFF=64, JLEN=224 };

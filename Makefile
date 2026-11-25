@@ -7,14 +7,23 @@ OUT = build/BFS.so
 LINK = -shared -nostdlib -Wl,-z,defs,-Bsymbolic
 ifeq ($(PROFILE),aggressive)
 OPT = -O3 -march=native -flto
+PGO = $(CURDIR)/build/pgo
+EXTRA = build/test_bfs
 else
 OPT = -O2 -march=x86-64 -mtune=generic
 endif
 .PHONY: all check clean
 all: $(OUT)
-$(OUT): $(SRC)
+$(OUT): $(SRC) $(EXTRA)
 	mkdir -p build
-	$(CC) $(BASE) $(OPT) $(LINK) -o $@ $<
+	ifeq ($(PROFILE),aggressive)
+	mkdir -p $(PGO)
+	$(CC) $(BASE) $(OPT) -shared -fprofile-generate=$(PGO) -o $@ $(SRC)
+	build/test_bfs ./$(OUT)
+	$(CC) $(BASE) $(OPT) $(LINK) -fprofile-use=$(PGO) -fprofile-correction -Werror=missing-profile -o $@ $(SRC)
+else
+	$(CC) $(BASE) $(OPT) $(LINK) -o $@ $(SRC)
+endif
 build/test_bfs: tests/test_bfs.c
 	mkdir -p build
 	$(CC) -std=c11 -O2 -Wall -Wextra -Werror -I Libraries/include -o $@ $< -ldl
