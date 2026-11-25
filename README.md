@@ -26,6 +26,8 @@ Independent mkfs.bfs images, malformed extents, overlaps and end-of-volume cases
 
 ## 7. Technical references and provenance
 
+- [Design and qualification reference (PDF)](docs/BFS.pdf) — design-stage reference only, with [editable page source](docs/BFS.pages); not an operational manual.
+
 - [Pinned central source baseline](https://github.com/Infiltrator-Projects/Filesystems/tree/101026021d9088d80b7f0f472d9061f0e2c688a3/native/filesystems/bfs)
 - [Native design](native/filesystems/bfs/DESIGN.md)
 - [Migration and qualification plan](MIGRATION_STATUS.md)
