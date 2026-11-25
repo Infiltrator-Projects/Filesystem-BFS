@@ -1,4 +1,4 @@
-name: Native Common V2 BFS qualification
+name: Native Common V2 BFS qualification and release
 on:
   push:
     branches: [main]
@@ -22,3 +22,38 @@ jobs:
         run: |
           make clean
           make PROFILE=aggressive check
+  publish:
+    needs: qualify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Package exact qualified source and source-downloading installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          version=$(cat VERSION)
+          make check
+          sh scripts/package.sh dist
+          common=$(git -C Libraries rev-parse HEAD)
+          curl -fsSL --retry 3 "https://codeload.github.com/Infiltrator-Projects/Filesystem-BFS/tar.gz/$GITHUB_SHA" -o /tmp/bfs-source.tar.gz
+          curl -fsSL --retry 3 "https://codeload.github.com/Infiltrator-Projects/Libraries/tar.gz/$common" -o /tmp/bfs-common.tar.gz
+          source_hash=$(sha256sum /tmp/bfs-source.tar.gz | cut -d' ' -f1)
+          common_hash=$(sha256sum /tmp/bfs-common.tar.gz | cut -d' ' -f1)
+          run="dist/filesystem-bfs-$version-native-installer.run"
+          sed -e "s/@SOURCE@/$GITHUB_SHA/g" -e "s/@COMMON@/$common/g" -e "s/@SOURCE_HASH@/$source_hash/g" -e "s/@COMMON_HASH@/$common_hash/g" scripts/installer.in > "$run"
+          chmod +x "$run"
+          "$run" --profile aggressive --build-only --output /tmp/bfs-native
+          test -s "/tmp/bfs-native/infiltrator-filesystem-bfs_${version}_amd64.deb"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "Release exists; immutable assets retained."
+            exit 0
+          fi
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          gh release create "v$version" --target "$GITHUB_SHA" --title "BFS v$version" --notes "Native Common V2 BFS, contiguous compaction, growth reservation and durable recovery." dist/*.deb "$run"

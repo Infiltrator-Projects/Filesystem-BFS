@@ -122,8 +122,8 @@ int main(int argc,char **argv){
     assert(core&&vol&&df&&df->header.capabilities==IFS_FS_DEFRAG_ALL);
     run(0);run(10);fault();
     /* An independently detected cross-linked inode must fail closed. */
-    corpus();put32(disk+B+2*64+4,le32(disk+B+64+4));
-    put32(disk+B+2*64+8,le32(disk+B+64+8));put32(disk+B+2*64+12,le32(disk+B+64+12));
+    corpus();put32(disk+B+3*64+4,le32(disk+B+2*64+4));
+    put32(disk+B+3*64+8,le32(disk+B+2*64+8));put32(disk+B+3*64+12,le32(disk+B+2*64+12));
     void *bad=NULL;IfsFsVolumeInfoV2 info={.structure_bytes=sizeof info};
     assert(core->mount(&h,&bad,&info)==IFS_FS_CORRUPT&&!bad);
     if(argc==3){

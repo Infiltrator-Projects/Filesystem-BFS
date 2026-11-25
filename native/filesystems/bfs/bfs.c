@@ -418,6 +418,7 @@ static int mount_impl(const IfsFsHostRuntimeV2 *h,void **v,IfsFsVolumeInfoV2 *o)
     s.recovered=0u;
     if(state==2u) {
         if(!writable(h))return IFS_FS_ACCESS;
+        if(h->logical_sector_bytes!=B)return IFS_FS_UNSUPPORTED;
         rc=replay(h,&g,&j);if(rc!=IFS_FS_OK)return rc;
         state=1u;s.recovered=1u;
     }
@@ -442,6 +443,7 @@ static int mutate(void *v,int plan)
 {
     int rc=usable(v);if(rc!=IFS_FS_OK)return rc;
     if(!writable(&s.h))return IFS_FS_ACCESS;
+    if(s.h.logical_sector_bytes!=B)return IFS_FS_UNSUPPORTED;
     if(s.journal!=1u)return IFS_FS_UNSUPPORTED;
     if(s.plan && !plan)return IFS_FS_BUSY;
     return IFS_FS_OK;
@@ -772,6 +774,7 @@ static int recover_impl(void *v,uint32_t flags,uint64_t *repaired)
     *repaired=0;
     if(!live(v) || flags)return IFS_FS_INVALID;
     if(!writable(&s.h))return IFS_FS_ACCESS;
+    if(s.h.logical_sector_bytes!=B)return IFS_FS_UNSUPPORTED;
     if(s.plan)return IFS_FS_BUSY;
     uint8_t raw[B];Geometry g;Intent j;unsigned state;
     int rc=geometry(&s.h,raw,&g);if(rc!=IFS_FS_OK)return rc;
@@ -817,6 +820,7 @@ static int format_impl(const IfsFsHostRuntimeV2 *h,uint32_t variant,
     if(!ifs_fs_host_v2_valid(h))return IFS_FS_INVALID;
     if(s.token)return IFS_FS_BUSY;
     if(!writable(h))return IFS_FS_ACCESS;
+    if(h->logical_sector_bytes!=B)return IFS_FS_UNSUPPORTED;
     if((variant!=0u && variant!=1u) || flags)return IFS_FS_UNSUPPORTED;
     uint32_t len=0u;
     if(label){while(len<=6u && label[len])++len;if(len>6u)return IFS_FS_INVALID;}
