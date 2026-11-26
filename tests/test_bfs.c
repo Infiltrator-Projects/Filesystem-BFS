@@ -41,6 +41,11 @@ static void put32(unsigned char *p,uint32_t x){for(unsigned i=0;i<4;i++)p[i]=(un
 static void validate(void *v,uint64_t pos[N],unsigned policy){
     unsigned char buf[PAY];uint64_t errors=99;assert(vol->check(v,0,&errors)==0&&!errors);
     assert(le32(disk)==0x1badfaceu);
+    IfsFsExtentV2 root_extent={0};uint32_t root_count=0;
+    assert(df->map(v,"/",0,&root_extent,1,&root_count)==IFS_FS_OK&&root_count==1);
+    assert(root_extent.physical_offset==(uint64_t)le32(disk+B+4)*B);
+    assert(root_extent.length==(uint64_t)le32(disk+B+12)+1-root_extent.physical_offset);
+    assert(df->map(v,"/",1,&root_extent,1,&root_count)==IFS_FS_END&&!root_count);
     for(unsigned i=0;i<N;i++){
         char p[20];path(p,i);memset(buf,0,sizeof buf);
         assert(core->read(v,p,0,buf,sizeof buf)==0&&!memcmp(buf,data[i],sizeof buf));
@@ -149,6 +154,23 @@ int main(int argc,char **argv){
     allocation=(const void*)a->query_group(IFS_FS_GROUP_ALLOCATION,2,2);
     assert(allocation&&allocation->map&&allocation->header.capabilities==IFS_FS_ALLOCATION_MAP);
     assert(core&&vol&&df&&df->header.capabilities==IFS_FS_DEFRAG_ALL);
+    const IfsFsFormatProfileOpsV2 *profiles=(const void*)a->query_group(IFS_FS_GROUP_FORMAT_PROFILE,2,2);
+    assert(profiles&&profiles->get_default&&(a->group_mask&IFS_FS_GROUP_BIT(IFS_FS_GROUP_FORMAT_PROFILE)));
+    IfsFsFormatProfileV2 profile={.structure_bytes=sizeof profile};
+    assert(profiles->get_default(NULL)==IFS_FS_INVALID);
+    profile.structure_bytes=sizeof profile-1;
+    assert(profiles->get_default(&profile)==IFS_FS_INVALID);
+    profile.structure_bytes=sizeof profile;
+    assert(profiles->get_default(&profile)==IFS_FS_OK&&ifs_fs_format_profile_v2_valid(&profile));
+    assert(profile.layout==IFS_FS_LAYOUT_CONTIGUOUS_FILE&&profile.exact_block_bytes==B);
+    assert(profile.recommended_bytes==SIZE&&profile.maximum_bytes==UINT64_C(0x100000000));
+    /* The advertised minimum must format and probe; one block less must fail. */
+    IfsFsHostRuntimeV2 small=h;small.volume_bytes=profile.minimum_bytes-B;
+    assert(vol->format(&small,profile.format_variant,"BFS",0)==IFS_FS_UNSUPPORTED);
+    small.volume_bytes=profile.minimum_bytes;
+    assert(vol->format(&small,profile.format_variant,"BFS",0)==IFS_FS_OK);
+    uint32_t observed=0;
+    assert(core->probe(&small,&observed)==IFS_FS_OK&&observed==profile.probe_variant);
     run(0);run(10);fault();
     /* An independently detected cross-linked inode must fail closed. */
     corpus();put32(disk+B+3*64+4,le32(disk+B+2*64+4));

@@ -662,8 +662,11 @@ static int map_impl(void *v,const char *path,uint64_t first,IfsFsExtentV2 *out,
     *written=0;
     int rc=usable(v);if(rc!=IFS_FS_OK)return rc;
     if(!out || !cap)return IFS_FS_INVALID;
-    Node f;uint8_t raw[I];rc=lookup(&s.h,&s.g,&s.root,path,&f,NULL,raw);
-    if(rc!=IFS_FS_OK)return rc;
+    Node f;uint8_t raw[I];
+    /* The root is a real, contiguous directory extent. It is not a
+     * directory entry in its own namespace and must not use file lookup. */
+    if(root_path(path))f=s.root;
+    else {rc=lookup(&s.h,&s.g,&s.root,path,&f,NULL,raw);if(rc!=IFS_FS_OK)return rc;}
     if(first || !f.size)return IFS_FS_END;
     *out=(IfsFsExtentV2){.physical_offset=(uint64_t)f.first*B,.length=f.size};
     *written=1u;return IFS_FS_OK;
@@ -976,6 +979,27 @@ static const IfsFsAllocationOpsV2 allocation_ops={
 static const IfsFsDefragOpsV2 defrag={
     .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsDefragOpsV2),IFS_FS_GROUP_DEFRAG,0,IFS_FS_DEFRAG_ALL},
     .map=map,.plan=plan,.execute=execute,.verify=verify,.recover=recover,.release_plan=release_plan};
+/* Expose the native formatter's actual geometry and contiguous-file
+ * semantics to every Common V2 consumer. No consumer needs BFS rules.
+ * Minimum includes the superblock, inode table, root and one data block;
+ * maximum follows the inclusive 32-bit on-disk end-byte field. */
+static int format_profile(IfsFsFormatProfileV2 *p)
+{
+    if(!p || p->structure_bytes<sizeof *p)return IFS_FS_INVALID;
+    *p=(IfsFsFormatProfileV2){
+        .structure_bytes=sizeof *p,
+        .flags=IFS_FS_FORMAT_ACCEPTS_LABEL|IFS_FS_FORMAT_REQUIRE_CHECK,
+        .format_variant=1u,.probe_variant=1u,.exact_block_bytes=B,
+        .layout=IFS_FS_LAYOUT_CONTIGUOUS_FILE,
+        .minimum_bytes=(uint64_t)(1u+NATIVE_INODES*I/B+ROOT_BLOCKS+1u)*B,
+        .recommended_bytes=2u*1024u*1024u,
+        .maximum_bytes=UINT64_C(0x100000000)};
+    return IFS_FS_OK;
+}
+static const IfsFsFormatProfileOpsV2 format_profile_ops={
+    .header={IFS_FS_GROUP_ABI_V2,sizeof(IfsFsFormatProfileOpsV2),
+        IFS_FS_GROUP_FORMAT_PROFILE,0,IFS_FS_FORMAT_PROFILE_DEFAULT},
+    .get_default=format_profile};
 static const IfsFsGroupHeaderV2 *group(uint32_t id,uint32_t min,uint32_t max)
 {
     if(min>IFS_FS_GROUP_ABI_V2 || max<IFS_FS_GROUP_ABI_V2)return NULL;
@@ -983,6 +1007,7 @@ static const IfsFsGroupHeaderV2 *group(uint32_t id,uint32_t min,uint32_t max)
     if(id==IFS_FS_GROUP_VOLUME)return &volume.header;
     if(id==IFS_FS_GROUP_DEFRAG)return &defrag.header;
     if(id==IFS_FS_GROUP_ALLOCATION)return &allocation_ops.header;
+    if(id==IFS_FS_GROUP_FORMAT_PROFILE)return &format_profile_ops.header;
     return NULL;
 }
 __attribute__((used,section(".ifsmeta")))static const char identity[]="IFS-MODULE:bfs:common2";
@@ -990,6 +1015,7 @@ static const IfsFsModuleApiV2 api={
     .abi_version=IFS_FS_COMMON_ABI_V2,.structure_bytes=sizeof(IfsFsModuleApiV2),
     .format_id="bfs",.runtime_profiles=IFS_FS_PROFILE_HOSTED|IFS_FS_PROFILE_FREESTANDING,
     .group_mask=IFS_FS_GROUP_BIT(IFS_FS_GROUP_CORE)|IFS_FS_GROUP_BIT(IFS_FS_GROUP_VOLUME)|
-                IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG)|IFS_FS_GROUP_BIT(IFS_FS_GROUP_ALLOCATION),.query_group=group};
+                IFS_FS_GROUP_BIT(IFS_FS_GROUP_DEFRAG)|IFS_FS_GROUP_BIT(IFS_FS_GROUP_ALLOCATION)|
+                IFS_FS_GROUP_BIT(IFS_FS_GROUP_FORMAT_PROFILE),.query_group=group};
 __attribute__((visibility("default")))
 const IfsFsModuleApiV2 *infiltrator_filesystem_api_v2(void){return &api;}
