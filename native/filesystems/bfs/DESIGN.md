@@ -1,5 +1,7 @@
 # BFS — native filesystem design
 
+> Historical extraction/design baseline. The independent provider now exists in source; see [current engineering reference](../../../docs/BFS-TECHNICAL-REFERENCE.md) for the current-source profile. The requirements below are retained for provenance, not current implementation status.
+
 ## Format scope
 
 SCO/UnixWare Boot File System, distinct from BeFS. This is a design contract, not a claim of implemented capabilities.
