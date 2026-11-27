@@ -50,8 +50,14 @@ The project-private journal occupies 224 bytes beginning at superblock offset 64
 
 The implementation copies and flushes destination payload before committing the metadata intent; a pending journal is replayed only on a writable durable host after validation. Its payload digest uses a 64-bit FNV-1a-style hash, not a cryptographic integrity guarantee. The planner orders nonempty files by physical start, simulates exact free ownership and plans moves that preserve whole-file contiguity. Overlapping destinations require safe staging. Growth policy 10 reserves ceil(blocks/10) adjacent free blocks, verified as free after execution; this is free-space layout, not file ownership or a persistent reservation promise. Execute rechecks source and destination, copies, flushes, commits new inode and records movement. Verify checks final range, size and intended free reservation; independent payload comparisons remain necessary.
 
+## Implementation and qualification boundary
+
+Common V2 is the independent provider's sole public interface: https://github.com/Infiltrator-Projects/Libraries/blob/main/docs/FILESYSTEM_COMMON_ABI_V2.md . Negotiate operation masks and media profiles; distinguish unsupported, corrupt, I/O and stale-handle results. Verify exclusive unmounted ownership, bounded host I/O and durable flush before mutations. Consumers use the same engine, not format-specific parsers. Hosted and freestanding binaries, relocation, Test Media, BOOT, kernel and packages require separate exact-source evidence. The repository README and qualification records establish current status.
+
 ## Interoperability and engineering acceptance
 
 Original source references: Linux BFS disk layout https://codebrowser.dev/linux/linux/include/uapi/linux/bfs_fs.h.html ; independent reader https://github.com/torvalds/linux/tree/v6.12/fs/bfs ; util-linux mkfs.bfs. Test independently created foreign images, empty and full-width names, final 32-bit byte boundary, partial inode table, overlapping files, invalid root aliases, orphaned inodes, dirty foreign relocation state, fragmented free space, growth with and without adjacent capacity, exhausted inode and directory slots, stale plans, cancellation and every journal interruption. Compare payload bytes and raw-image hashes; do not write foreign media through the private journal profile. Project workflow builds portable and native provider and packages preview/Filesystem-BFS.pdf; exact release and boot qualification must be checked separately.
 
-The PDF preserves both earlier documents as historical appendices.
+Test inode-table exhaustion and relocation of the final allocated extent. The central historical BFS.so reader/overwrite source and Linux run 39921073843 are provenance only, not independent provider qualification.
+
+Historical source: https://github.com/Infiltrator-Projects/Filesystems/blob/101026021d9088d80b7f0f472d9061f0e2c688a3/native/filesystems/bfs/module/bfs_module.c .
