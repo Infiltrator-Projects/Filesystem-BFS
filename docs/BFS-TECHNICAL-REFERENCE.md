@@ -58,6 +58,6 @@ Common V2 is the independent provider's sole public interface: https://github.co
 
 Original source references: Linux BFS disk layout https://codebrowser.dev/linux/linux/include/uapi/linux/bfs_fs.h.html ; independent reader https://github.com/torvalds/linux/tree/v6.12/fs/bfs ; util-linux mkfs.bfs. Test independently created foreign images, empty and full-width names, final 32-bit byte boundary, partial inode table, overlapping files, invalid root aliases, orphaned inodes, dirty foreign relocation state, fragmented free space, growth with and without adjacent capacity, exhausted inode and directory slots, stale plans, cancellation and every journal interruption. Compare payload bytes and raw-image hashes; do not write foreign media through the private journal profile. Project workflow builds portable and native provider and packages preview/Filesystem-BFS.pdf; exact release and boot qualification must be checked separately.
 
-Test inode-table exhaustion and relocation of the final allocated extent. The central historical BFS.so reader/overwrite source and Linux run 39921073843 are provenance only, not independent provider qualification.
+Include relocation of the final allocated extent in those tests. The central historical BFS.so reader/overwrite source and Linux run 39921073843 are provenance only, not independent provider qualification.
 
 Historical source: https://github.com/Infiltrator-Projects/Filesystems/blob/101026021d9088d80b7f0f472d9061f0e2c688a3/native/filesystems/bfs/module/bfs_module.c .

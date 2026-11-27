@@ -333,30 +333,30 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 35 0 R >>
 endobj
 35 0 obj
-<< /Length 2478 >>
+<< /Length 2469 >>
 stream
 0.06 0.15 0.23 rg 0 768 595 74 re f
 1 1 1 rg BT /F2 10 Tf 43 811 Td (INFILTRATOR / FILESYSTEM ENGINEERING) Tj ET
 BT /F2 22 Tf 43 784 Td (BFS - technical reference) Tj ET
 0.08 0.14 0.20 rg BT /F2 15 Tf 43 736 Td (14. Interoperability and engineering acceptance) Tj ET
 0.08 0.14 0.20 rg BT /F3 10 Tf 43 706 Td (Original source references: Linux BFS disk layout) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (https://codebrowser.dev/linux/linux/include/uapi/linux/bfs_fs.h.html ; independent) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (reader https://github.com/torvalds/linux/tree/v6.12/fs/bfs ; util-linux mkfs.bfs.) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (Test independently created foreign images, empty and full-width names, final 32-bit) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (byte boundary, partial inode table, overlapping files, invalid root aliases,) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (orphaned inodes, dirty foreign relocation state, fragmented free space, growth with) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (and without adjacent capacity, exhausted inode and directory slots, stale plans,) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (cancellation and every journal interruption. Compare payload bytes and raw-image) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (hashes; do not write foreign media through the private journal profile. Project) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 580 Td (workflow builds portable and native provider and packages) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 566 Td (preview/Filesystem-BFS.pdf; exact release and boot qualification must be checked) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 552 Td (separately.) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 528 Td (Test inode-table exhaustion and relocation of the final allocated extent. The) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 514 Td (central historical BFS.so reader/overwrite source and Linux run 39921073843 are) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 692 Td (https://codebrowser.dev/linux/linux/include/uapi/linux/bfs_fs.h.html ;) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 678 Td (independent reader https://github.com/torvalds/linux/tree/v6.12/fs/bfs ;) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 664 Td (util-linux mkfs.bfs. Test independently created foreign images, empty and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 650 Td (full-width names, final 32-bit byte boundary, partial inode table, overlapping) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 636 Td (files, invalid root aliases, orphaned inodes, dirty foreign relocation state,) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 622 Td (fragmented free space, growth with and without adjacent capacity, exhausted) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 608 Td (inode and directory slots, stale plans, cancellation and every journal) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 594 Td (interruption. Compare payload bytes and raw-image hashes; do not write foreign) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 580 Td (media through the private journal profile. Project workflow builds portable and) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 566 Td (native provider and packages preview/Filesystem-BFS.pdf; exact release and boot) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 552 Td (qualification must be checked separately.) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 528 Td (Include relocation of the final allocated extent in those tests. The central) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 514 Td (historical BFS.so reader/overwrite source and Linux run 39921073843 are) Tj ET
 0.08 0.14 0.20 rg BT /F3 10 Tf 43 500 Td (provenance only, not independent provider qualification.) Tj ET
 0.08 0.14 0.20 rg BT /F3 10 Tf 43 476 Td (Historical source:) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 462 Td (https://github.com/Infiltrator-Projects/Filesystems/blob/101026021d9088d80b7f0f472d) Tj ET
-0.08 0.14 0.20 rg BT /F3 10 Tf 43 448 Td (9061f0e2c688a3/native/filesystems/bfs/module/bfs_module.c .) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 462 Td (https://github.com/Infiltrator-Projects/Filesystems/blob/101026021d9088d80b7f0f) Tj ET
+0.08 0.14 0.20 rg BT /F3 10 Tf 43 448 Td (472d9061f0e2c688a3/native/filesystems/bfs/module/bfs_module.c .) Tj ET
 0.2 0.3 0.4 rg BT /F1 9 Tf 43 32 Td (Historical development and engineering reference | 15) Tj ET
 endstream
 endobj
@@ -401,5 +401,5 @@ xref
 trailer
 << /Size 36 /Root 1 0 R >>
 startxref
-26975
+26966
 %%EOF
