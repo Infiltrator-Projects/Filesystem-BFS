@@ -6,7 +6,8 @@ out=$(realpath -m "${1:-dist}")
 mkdir -p "$out"
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
-install -Dm755 build/BFS.so "$stage/System/Filesystems/BFS.so"
+make carrier
+install -Dm755 build/carrier/BFS.so "$stage/System/Filesystems/BFS.so"
 install -Dm644 preview/Filesystem-BFS.pdf "$stage/System/Resources/Documentation/Filesystem-BFS.pdf"
 mkdir -p "$stage/DEBIAN"
 cat > "$stage/DEBIAN/control" <<EOF
